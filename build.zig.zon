@@ -23,9 +23,9 @@
     // Once all dependencies are fetched, `zig build` no longer requires
     // internet connectivity.
     .dependencies = .{
-        .sdl = .{
-            .url = "git+https://github.com/ikskuh/SDL.zig#1432ed3f6a020973906fbc996868131ae1d631be",
-            .hash = "1220ebeeaade31e207a56977aff537a65e6338cddc68d50217ddf30bbc58fb27d367",
+        .mibu = .{
+            .url = "https://github.com/xyaman/mibu/archive/refs/heads/master.tar.gz",
+            .hash = "1220fe59d9b8067e263cb276dc59a2a53900f15b873e78b7e0e41d74d18c6bb1f02c",
         },
     },
     .paths = .{

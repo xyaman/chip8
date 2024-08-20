@@ -1,5 +1,5 @@
 const std = @import("std");
-const SDL = @import("sdl");
+const events = @import("mibu").events;
 
 pub const Chip8 = struct {
     // The first 512 bytes, from 0x000 to 0x1FF, are where the original
@@ -64,7 +64,7 @@ pub const Chip8 = struct {
         const right: u16 = self.memory[self.pc + 1];
 
         const opcode = left << 8 | right;
-        std.debug.print("{x:0^4}\n", .{opcode});
+        // std.debug.print("{x:0^4}\n", .{opcode});
 
         switch (opcode & 0xF000) {
             0x0000 => switch (opcode & 0x0FFF) {
@@ -278,6 +278,7 @@ pub const Chip8 = struct {
                     const vx = self.v[(opcode & 0x0F00) >> 8];
                     if (self.keyboard[vx] == 0) {
                         self.pc += 2;
+                        // self.keyboard[vx] = 0;
                     }
 
                     self.pc += 2;
@@ -289,7 +290,9 @@ pub const Chip8 = struct {
                     const vx = self.v[(opcode & 0x0F00) >> 8];
                     if (self.keyboard[vx] == 1) {
                         self.pc += 2;
+                        self.keyboard[vx] = 0;
                     }
+
                     self.pc += 2;
                 },
                 else => {
@@ -314,6 +317,7 @@ pub const Chip8 = struct {
                     for (self.keyboard, 0..) |key, i| {
                         if (key == 1) {
                             self.v[x] = @intCast(i);
+                            self.keyboard[i] = 0;
                             should_continue = true;
                         }
                     }
@@ -366,67 +370,40 @@ pub const Chip8 = struct {
                 std.process.exit(1);
             },
         }
-
-        if (self.delay_register > 0) {
-            self.delay_register -= 1;
-        }
-
-        if (self.sound_register > 0) {
-            self.sound_register -= 1;
-        }
     }
 
     pub fn handleEvents(self: *Self) void {
-        while (SDL.pollEvent()) |ev| {
-            switch (ev) {
-                .quit => {
-                    self.is_running = false;
-                    break;
+        const stdin = std.io.getStdIn();
+        const next = events.next(stdin) catch unreachable;
+
+        switch (next) {
+            .key => |k| switch (k) {
+                .ctrl => |c| switch (c) {
+                    'c' => self.is_running = false,
+                    else => {},
                 },
-                .key_down => |key| {
-                    switch (key.scancode) {
-                        .@"7" => self.keyboard[0] = 1,
-                        .@"8" => self.keyboard[1] = 1,
-                        .@"9" => self.keyboard[2] = 1,
-                        .@"0" => self.keyboard[3] = 1,
-                        .u => self.keyboard[4] = 1,
-                        .i => self.keyboard[5] = 1,
-                        .o => self.keyboard[6] = 1,
-                        .p => self.keyboard[7] = 1,
-                        .j => self.keyboard[8] = 1,
-                        .k => self.keyboard[9] = 1,
-                        .l => self.keyboard[10] = 1,
-                        .semicolon => self.keyboard[11] = 1,
-                        .m => self.keyboard[12] = 1,
-                        .comma => self.keyboard[13] = 1,
-                        .period => self.keyboard[14] = 1,
-                        .backslash => self.keyboard[15] = 1,
-                        else => {},
-                    }
-                },
-                .key_up => |key| {
-                    switch (key.scancode) {
-                        .@"7" => self.keyboard[0] = 0,
-                        .@"8" => self.keyboard[1] = 0,
-                        .@"9" => self.keyboard[2] = 0,
-                        .@"0" => self.keyboard[3] = 0,
-                        .u => self.keyboard[4] = 0,
-                        .i => self.keyboard[5] = 0,
-                        .o => self.keyboard[6] = 0,
-                        .p => self.keyboard[7] = 0,
-                        .j => self.keyboard[8] = 0,
-                        .k => self.keyboard[9] = 0,
-                        .l => self.keyboard[10] = 0,
-                        .semicolon => self.keyboard[11] = 0,
-                        .m => self.keyboard[12] = 0,
-                        .comma => self.keyboard[13] = 0,
-                        .period => self.keyboard[14] = 0,
-                        .backslash => self.keyboard[15] = 0,
-                        else => {},
-                    }
+                .char => |c| switch (c) {
+                    '7' => self.keyboard[0] = 1,
+                    '8' => self.keyboard[1] = 1,
+                    '9' => self.keyboard[2] = 1,
+                    '0' => self.keyboard[3] = 1,
+                    'u' => self.keyboard[4] = 1,
+                    'i' => self.keyboard[5] = 1,
+                    'o' => self.keyboard[6] = 1,
+                    'p' => self.keyboard[7] = 1,
+                    'j' => self.keyboard[8] = 1,
+                    'k' => self.keyboard[9] = 1,
+                    'l' => self.keyboard[10] = 1,
+                    ';' => self.keyboard[11] = 1,
+                    'm' => self.keyboard[12] = 1,
+                    ',' => self.keyboard[13] = 1,
+                    '.' => self.keyboard[14] = 1,
+                    '\\' => self.keyboard[15] = 1,
+                    else => {},
                 },
                 else => {},
-            }
+            },
+            else => {},
         }
     }
 };

@@ -1,5 +1,4 @@
 const std = @import("std");
-const sdl = @import("sdl");
 
 // Although this function looks imperative, note that its job is to
 // declaratively construct a build graph that will be executed by an external
@@ -20,9 +19,12 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
-    const sdl_sdk = sdl.init(b, null, null);
-    sdl_sdk.link(exe, .dynamic, sdl.Library.SDL2);
-    exe.root_module.addImport("sdl", sdl_sdk.getWrapperModule());
+    const mibu_dep = b.dependency("mibu", .{
+        .target = target,
+        .optimize = optimize,
+    });
+
+    exe.root_module.addImport("mibu", mibu_dep.module("mibu"));
 
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default

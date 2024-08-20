@@ -1,5 +1,11 @@
 ## [WIP] Chip8 emulator written in Zig
 
-It uses SDL as graphics backend. Made for learning purposes.
+It doesn't use a graphics library, like SDL, but instead renders the screen 
+in the terminal using mibu.
 
-> Tested with zig 0.14.0-dev.367+a57479afc
+### Why write a Chip8 emulator in Zig?
+
+I just wanted to try and test mibu, a library I wrote to interact with the
+terminal.
+
+> Tested with zig 0.13.0
