@@ -12,8 +12,7 @@ pub fn main() !void {
         std.process.exit(1);
     };
 
-    var allocator = std.heap.GeneralPurposeAllocator(.{}){};
-    var screen = try Screen.init(allocator.allocator());
+    var screen = try Screen.init();
     defer screen.deinit();
 
     var chip8 = Chip8.init();

@@ -25,7 +25,7 @@
     .dependencies = .{
         .mibu = .{
             .url = "https://github.com/xyaman/mibu/archive/refs/heads/master.tar.gz",
-            .hash = "1220fe59d9b8067e263cb276dc59a2a53900f15b873e78b7e0e41d74d18c6bb1f02c",
+            .hash = "12205e93ed17ab3081a9d5289c2665e67873501f069a6210e02f3d8178a0c6e3156a",
         },
     },
     .paths = .{

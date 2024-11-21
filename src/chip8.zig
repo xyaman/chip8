@@ -374,7 +374,7 @@ pub const Chip8 = struct {
 
     pub fn handleEvents(self: *Self) void {
         const stdin = std.io.getStdIn();
-        const next = events.next(stdin) catch unreachable;
+        const next = events.nextWithTimeout(stdin, 0) catch unreachable;
 
         switch (next) {
             .key => |k| switch (k) {

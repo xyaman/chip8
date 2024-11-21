@@ -3,57 +3,57 @@ const mibu = @import("mibu");
 const cursor = mibu.cursor;
 
 pub const Screen = struct {
-    allocator: std.mem.Allocator,
-    termios: mibu.term.RawTerm,
+    rt: mibu.term.RawTerm,
     stdout: std.fs.File,
 
     // I use an ArrayList because depending on the screen size,
     // the buffer length may change.
-    buffer: std.ArrayList(bool),
+    buffers: [2][32 * 64]bool,
+    buf_id: usize,
 
     w: u16,
     h: u16,
 
     const Self = @This();
 
-    pub fn init(allocator: std.mem.Allocator) !Self {
+    pub fn init() !Self {
         const stdin = std.io.getStdIn();
-        const termios = try mibu.term.enableRawMode(stdin.handle, .nonblocking);
+        const term_size = try mibu.term.getSize(stdin.handle);
+        if (term_size.height < 32 or term_size.width < 64) {
+            return error.TerminalIsTooSmall;
+        }
 
+        const rt = try mibu.term.enableRawMode(stdin.handle);
         const stdout = std.io.getStdOut();
+        try mibu.term.enterAlternateScreen(stdout.writer());
+
         mibu.clear.all(stdout.writer()) catch {};
 
         // hide cursor
         try cursor.hide(stdout);
 
-        var buffer = std.ArrayList(bool).init(allocator);
-
-        var x: usize = 0;
-        while (x < 64) : (x += 1) {
-            var y: usize = 0;
-            while (y < 32) : (y += 1) {
-                try buffer.append(false);
-            }
-        }
+        var buffers: [2][32 * 64]bool = undefined;
+        buffers[0] = [_]bool{false} ** (32 * 64);
+        buffers[1] = [_]bool{false} ** (32 * 64);
 
         return .{
-            .buffer = buffer,
-            .allocator = allocator,
+            .buffers = buffers,
+            .buf_id = 0,
             .stdout = stdout,
-            .termios = termios,
+            .rt = rt,
             .w = 64,
             .h = 32,
         };
     }
 
     pub fn deinit(self: *Self) void {
-        self.buffer.deinit();
-        self.termios.disableRawMode() catch {};
+        self.rt.disableRawMode() catch undefined;
+        mibu.term.exitAlternateScreen(self.stdout.writer()) catch undefined;
 
         // console restoring
-        cursor.show(self.stdout.writer()) catch {};
-        cursor.goTo(self.stdout.writer(), 0, 0) catch {};
-        mibu.clear.all(self.stdout.writer()) catch {};
+        cursor.show(self.stdout.writer()) catch undefined;
+        cursor.goTo(self.stdout.writer(), 0, 0) catch undefined;
+        mibu.clear.all(self.stdout.writer()) catch undefined;
     }
 
     fn getCellAt(self: *Self, x: usize, y: usize) bool {
@@ -62,7 +62,11 @@ pub const Screen = struct {
             return false;
         }
 
-        return self.buffer.items[self.w * y + x];
+        return self.buffers[self.buf_id][self.w * y + x];
+    }
+
+    fn diffCellAt(self: *Self, x: usize, y: usize) bool {
+        return self.buffers[0][self.w * y + x] != self.buffers[1][self.w * y + x];
     }
 
     pub fn setCellTo(self: *Self, x: usize, y: usize, value: bool) void {
@@ -70,8 +74,7 @@ pub const Screen = struct {
             std.debug.print("invalid cell\n", .{});
             return;
         }
-
-        self.buffer.items[self.w * y + x] = value;
+        self.buffers[self.buf_id][self.w * y + x] = value;
     }
 
     pub fn flush(self: *Self) void {
@@ -79,6 +82,9 @@ pub const Screen = struct {
         while (x < 64) : (x += 1) {
             var y: usize = 0;
             while (y < 32) : (y += 1) {
+                if (!self.diffCellAt(x, y)) {
+                    continue;
+                }
                 var value: u21 = ' ';
                 if (self.getCellAt(x, y)) {
                     value = '█';
@@ -86,5 +92,7 @@ pub const Screen = struct {
                 self.stdout.writer().print("{s}{u}", .{ cursor.print.goTo(x, y), value }) catch unreachable;
             }
         }
+
+        self.buf_id = 1 - self.buf_id;
     }
 };
