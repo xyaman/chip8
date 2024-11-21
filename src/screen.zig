@@ -13,6 +13,7 @@ pub const Screen = struct {
 
     w: u16,
     h: u16,
+    term_size: mibu.term.TermSize,
 
     const Self = @This();
 
@@ -43,6 +44,7 @@ pub const Screen = struct {
             .rt = rt,
             .w = 64,
             .h = 32,
+            .term_size = term_size,
         };
     }
 
@@ -78,6 +80,13 @@ pub const Screen = struct {
     }
 
     pub fn flush(self: *Self) void {
+
+        // We want to center the screen
+
+        // space - 64 - space
+        const initialX = (self.term_size.width - 64) / 2;
+        const initialY = (self.term_size.height - 32) / 2;
+
         var x: usize = 0;
         while (x < 64) : (x += 1) {
             var y: usize = 0;
@@ -89,7 +98,7 @@ pub const Screen = struct {
                 if (self.getCellAt(x, y)) {
                     value = '█';
                 }
-                self.stdout.writer().print("{s}{u}", .{ cursor.print.goTo(x, y), value }) catch unreachable;
+                self.stdout.writer().print("{s}{u}", .{ cursor.print.goTo(initialX + x + 1, initialY + y + 1), value }) catch unreachable;
             }
         }
 
